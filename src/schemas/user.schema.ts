@@ -6,11 +6,20 @@ import { Document } from 'mongoose';
 export class User extends Document {
   @Prop()
   first_name: string;
+
   @Prop()
   last_name : string;
+
   @Prop({unique:[true, 'Email already exists']})
   email : string;
+
   @Prop()
   password : string;
+
+  @Prop({ default: '' })
+  profilePicture: string;  
+  
+  @Prop({default:' '})
+  token:string;
 }
 export const userSchema = SchemaFactory.createForClass(User);

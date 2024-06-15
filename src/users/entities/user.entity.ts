@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 export class User {
     first_name : string;
     last_name : string;

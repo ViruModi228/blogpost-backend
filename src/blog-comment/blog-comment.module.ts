@@ -3,10 +3,12 @@ import { BlogCommentService } from './blog-comment.service';
 import { BlogCommentController } from './blog-comment.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { BlogCommentSchema, BlogComment } from 'src/schemas/blog-comment.schema';
+import { BlogModule } from 'src/blog/blog.module';
 
 @Module({
   imports:[
-    MongooseModule.forFeature([{name:BlogComment.name, schema:BlogCommentSchema}]),
+    BlogModule,
+    MongooseModule.forFeature([{name:BlogComment.name, schema:BlogCommentSchema}])
   ],
   controllers: [BlogCommentController],
   providers: [BlogCommentService],

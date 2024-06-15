@@ -13,5 +13,6 @@ import { UsersModule } from 'src/users/users.module';
   ],
   controllers: [BlogController],
   providers: [BlogService],
+  exports:[MongooseModule] // blog module ko dusre module m user krne ke liye remember it!
 })
 export class BlogModule {}

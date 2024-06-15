@@ -1,8 +1,10 @@
 export class CreateBlogCommentDto {
-    blogId:number;
-    comment:string;
+    blogId:string;
+    content:string;
     noOfCharacters: number;
-    commentType: string;
     commentLikes:number;
-    dateTime: Date;
+    createdAt: Date;
+    userId:string;
+    parentCommentId:string;
+    replies:number
 }

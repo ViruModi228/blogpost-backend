@@ -1,12 +1,10 @@
-/* eslint-disable prettier/prettier */
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as  mongoose from 'mongoose';
 import {User} from './user.schema'
 
-
 @Schema()
-export class Blog {
-  @Prop()
+export class Blog{
+  @Prop({unique:true})
   blogId:number;
 
   @Prop()
@@ -17,21 +15,20 @@ export class Blog {
 
   @Prop({default:0})
   likes: number;
-  
+
   @Prop({default:0})
-  disLikes: number;
+  comments: number;
   
-  @Prop({ type: [String], default: [] }) // Array of user names who liked the blog
-  likedBy: string[];
-
-  @Prop({ type: [String], default: [] }) // Array of user names who disliked the blog
-  disLikedBy: string[];
-
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], default: [] }) 
+  likedBy: String[];
 
   @Prop({ default: Date.now })
   datetime: Date;
  
-  @Prop({ type:mongoose.Schema.Types.ObjectId,ref:'User' }) // Define user as type Object
-  user:User // Object containing userId
+  @Prop({ type:mongoose.Schema.Types.ObjectId,ref:'User' }) 
+  userId:User
+
+  @Prop({default:' '})
+  blogPicture: string;
 }
 export const blogSchema = SchemaFactory.createForClass(Blog);

@@ -2,9 +2,11 @@ import { Date } from "mongoose";
 
 export class BlogComment {
     blogId:number;
-    comment:string;
-    noOfCharacters: number;
-    commentType: string;
+    content:string;
     commentLikes:number;
-    dateTime: Date;
+    createdAt: Date;
+    likedBy:String[];
+    userId:string;
+    parentCommentId:string;
+    replies:number;
 }

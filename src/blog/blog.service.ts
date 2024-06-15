@@ -5,90 +5,103 @@ import { UpdateBlogDto } from './dto/update-blog.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Blog } from './entities/blog.entity';
 import { Model, ObjectId } from 'mongoose';
-import { LikeBlogDto } from './dto/like-blog.dto';
-import { DislikeBlogDto } from './dto/dislike-blog.dto';
 
 @Injectable()
 export class BlogService {
-  constructor(@InjectModel(Blog.name) private readonly blogModel: Model<Blog>) {}
+  constructor(@InjectModel(Blog.name) private readonly blogModel: Model<Blog>) { }
+
+  async findLastBlogId(): Promise<number> {
+    const lastBlog = await this.blogModel.findOne().sort({ blogId: -1 }).exec();
+    return lastBlog ? lastBlog.blogId + 1 : 1; // if no blog then return 1 as it will be the first blog
+  }
 
   async create(createBlogDto: CreateBlogDto): Promise<Blog> {
-    try{  
+    try {
+      console.log('in create blog service')
+
+      createBlogDto.blogId = await this.findLastBlogId();
       createBlogDto.noOfCharacters = createBlogDto.description.length
-      const newBlog =  await this.blogModel.create(createBlogDto);
-      //newBlog.noOfCharacters=newBlog.description.length;
-      console.log("saved blog",newBlog);
+
+      console.log('new blog id = ' + createBlogDto.blogId)
+      console.log('user id in service = ', createBlogDto.userId)
+      const newBlog = await this.blogModel.create(createBlogDto);
+      console.log("saved blog", newBlog);
       return newBlog;
-    }catch(err){
+    } catch (err) {
       console.log("error in service", err);
       throw new InternalServerErrorException('failed to create blog');
     }
   }
 
-
-  //Service for Blog-likes
-  async likeBlog(likeBlogDto: LikeBlogDto, userId: string): Promise<Blog> {
-    const { blogId } = likeBlogDto;
-    const blog = await this.blogModel.findById<Blog>(blogId); // Specify the type of document as Blog
+  async likeBlog(blogId: number, userId: string): Promise<Blog> {
+    console.log("in liking/disliking a blog service method blog id -> ", blogId)
+    const blog = await this.blogModel.findOne({ blogId })
     if (!blog) {
       throw new NotFoundException('Blog not found');
     }
-    
-    if (blog.likedBy.includes(userId)) {
-      throw new ConflictException('You already liked this blog');
+    const userIndex = blog.likedBy.indexOf(userId as any);
+    if (userIndex !== -1) {
+      blog.likes -= 1;
+      blog.likedBy.splice(userIndex, 1);
+    } else {
+      blog.likes += 1;
+      blog.likedBy.push(userId as any);
     }
-
-    else{
-      
-      return await this.blogModel.findByIdAndUpdate(blogId,{
-        $inc:{likes:1},
-        $push:{
-          likedBy:userId,
-          
-        }
-      })
-    }
-  }
-  async dislikeBlog(dislikeBlogDto: DislikeBlogDto, userId: string): Promise<Blog> {
-    const { blogId } = dislikeBlogDto;
-    const blog = await this.blogModel.findById<Blog>(blogId); // Specify the type of document as Blog
-    console.log("UserId............"+userId);
-    if (!blog) {
-      throw new NotFoundException('Blog not found');
-    }
-
-    if (blog.disLikedBy?.includes(userId)) {
-      throw new ConflictException('You already disliked this blog');
-    }
-    else{
-      return await this.blogModel.findByIdAndUpdate(blogId,{
-        $inc:{disLikes:1,likes:-1},
-        
-        $push:{
-          disLikedBy:userId
-        },
-        $pull:{
-          likedBy:userId,
-        },
-        
-      })
-    }
-    
-  }
-  async  findAll(): Promise<any> {
-    return await this.blogModel.find().populate("user").exec(); //added exec()
+    await blog.save();
+    return blog;
   }
 
-  async findByUser(user: ObjectId): Promise<any> {
-    return await this.blogModel.find({user}).exec();
+  async getBlogLikes(blogId: number, userId: string): Promise<String[]> {
+    console.log("in get blog likes service method blogId ", blogId);
+    const blog = await this.blogModel.findOne({ blogId }).populate('likedBy')
+    console.log("likes of blog ", blog)
+    if (blog) {
+      return blog.likedBy;
+    }
+    else {
+      throw new NotFoundException('blog not found')
+    }
   }
 
-  async update(id: string, updateBlogDto: UpdateBlogDto):Promise<any> {
-    const updatedBlog = await this.blogModel.findByIdAndUpdate(id, updateBlogDto, { new: true });
-    return updatedBlog;
+  async findAll(): Promise<any> {
+    const allBlogs = await this.blogModel.find().populate('userId').exec();
+    console.log(allBlogs);
+    return allBlogs
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} blog`;
+  async findAllForUser(userId : string): Promise<any> {
+    const allBlogs = await this.blogModel.find({userId:userId}).populate('userId').exec();
+    console.log(allBlogs);
+    return allBlogs
+  }
+
+  async update(id: string, updateBlogDto: UpdateBlogDto): Promise<any> {
+    try {
+      if (updateBlogDto.description && updateBlogDto.description.length > 0) {
+        updateBlogDto.noOfCharacters = updateBlogDto.description.length;
+      }
+      const updatedBlog = await this.blogModel.findByIdAndUpdate(id, updateBlogDto, { new: true });
+      return updatedBlog;
+    } catch (error) {
+      console.error('Error updating blog in service:', error);
+      throw new InternalServerErrorException('Failed to update blog');
+    }
+  }
+
+  async delete(id: string): Promise<{ message: string }> {
+    try {
+      console.log('in blog delete service method!');
+      console.log('blog id in service -> ', id);
+
+      const deleteBlog = await this.blogModel.findByIdAndDelete(id);
+      if (!deleteBlog) {
+        throw new NotFoundException('Blog not found!');
+      }
+      console.log('blog successfully deleted in service');
+      return { message: 'Blog successfully deleted' };
+    } catch (error) {
+      console.log('error in delete method of service (server error)', error);
+      throw new InternalServerErrorException('Failed to delete blog');
+    }
   }
 }
